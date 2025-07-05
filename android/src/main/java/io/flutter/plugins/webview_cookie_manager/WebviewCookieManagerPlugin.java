@@ -1,12 +1,19 @@
 package io.flutter.plugins.webview_cookie_manager;
 
+import androidx.annotation.NonNull;
+
+import io.flutter.embedding.engine.plugins.FlutterPlugin;
+import io.flutter.plugin.common.MethodCall;
+import io.flutter.plugin.common.MethodChannel;
+import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
+import io.flutter.plugin.common.MethodChannel.Result;
+import io.flutter.plugin.common.PluginRegistry.Registrar;
+
 import android.net.Uri;
 import android.os.Build;
 import android.os.Build.VERSION_CODES;
 import android.webkit.CookieManager;
 import android.webkit.ValueCallback;
-
-import androidx.annotation.NonNull;
 
 import java.net.HttpCookie;
 import java.util.ArrayList;
@@ -14,12 +21,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import io.flutter.embedding.engine.plugins.FlutterPlugin;
-import io.flutter.plugin.common.MethodCall;
-import io.flutter.plugin.common.MethodChannel;
-import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
-import io.flutter.plugin.common.MethodChannel.Result;
 
 /**
  * WebviewCookieManagerPlugin
@@ -31,6 +32,19 @@ public class WebviewCookieManagerPlugin implements FlutterPlugin, MethodCallHand
     /// when the Flutter Engine is detached from the Activity
     private MethodChannel channel;
 
+    // This static function is optional and equivalent to onAttachedToEngine. It supports the old
+    // pre-Flutter-1.12 Android projects. You are encouraged to continue supporting
+    // plugin registration via this function while apps migrate to use the new Android APIs
+    // post-flutter-1.12 via https://flutter.dev/go/android-project-migration.
+    //
+    // It is encouraged to share logic between onAttachedToEngine and registerWith to keep
+    // them functionally equivalent. Only one of onAttachedToEngine or registerWith will be called
+    // depending on the user's project. onAttachedToEngine or registerWith must both be defined
+    // in the same class.
+    public static void registerWith(Registrar registrar) {
+        final MethodChannel channel = new MethodChannel(registrar.messenger(), "webview_cookie_manager");
+        channel.setMethodCallHandler(new WebviewCookieManagerPlugin());
+    }
 
     private static void hasCookies(final Result result) {
         CookieManager cookieManager = CookieManager.getInstance();
@@ -49,7 +63,6 @@ public class WebviewCookieManagerPlugin implements FlutterPlugin, MethodCallHand
                             result.success(hasCookies);
                         }
                     });
-            cookieManager.flush();
         } else {
             cookieManager.removeAllCookie();
             result.success(hasCookies);
@@ -118,10 +131,6 @@ public class WebviewCookieManagerPlugin implements FlutterPlugin, MethodCallHand
             }
             final String value = cookieMap.get("asString").toString();
             cookieManager.setCookie(domainString, value);
-        }
-
-        if (Build.VERSION.SDK_INT >= VERSION_CODES.LOLLIPOP) {
-            cookieManager.flush();
         }
 
         result.success(null);
